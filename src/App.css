@@ -1,0 +1,10 @@
+.backgroundStyle {
+    background-color: #75d3ff;
+    height: 98vh;
+    width: 99vw;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+
