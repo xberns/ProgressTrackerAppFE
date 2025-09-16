@@ -1,26 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { Box, TextField, Button, Typography } from '@mui/material';
 import '../App.css'
-import {postNotes, getNotes} from '../Controller/NotesController'
+import {postNotes,updateNotes, getNotes , deleteNotes} from '../Controller/NotesController'
+import {getDateOnly} from "../mainslice/commonUtils"
 
 
 export default function Notes ()
 {
-    const [date, setDate] = useState("2025-08-30");
+    const [date, setDate] = useState(getDateOnly());
     const [notes, setNotes] = useState("");
     const [params, setParams] = useState();
-     const [datessss, setDatess] = useState({date : "2025-08-30"});
- 
-  
-    useEffect(()=> {
-     const fetchNotes = async () => {
-        const datas = await getNotes(datessss);
-        setNotes(datas);
-     }
+    const [getTrig, setGetTrig] = useState (true);
+    const [toUpdate, setToUpdate] = useState (false);
+   useEffect(() => {
+  if (getTrig){
+    const fetchNotes = async () => {
+    try {
+      const data = await getNotes({date});
+      if (data != null)
+      {
+       setToUpdate(true);
+       setNotes(data);
+      }
+      else{
+        setToUpdate(false);
+      }
+      
+    } catch (error) {
+      console.error("Fetch failed", error);
+      setNotes("Failed to load note.");
+    }
+    };
+    setGetTrig(false);
     fetchNotes();
-
-    }, [datessss]
-  );
+  }
+  }, [notes, getTrig]);
      
   useEffect(()=> {
    setParams( { Date_created: date, Notes_content: notes});
@@ -28,12 +42,28 @@ export default function Notes ()
   , [notes]);
 
     const handleClick = async  () => {
-      console.log(params);
     if (params.Notes_content != null)
     {
-    await postNotes (params)
-  }
+      if (toUpdate === true)
+      {
+        await updateNotes (params);
+      }
+      else
+      {
+        await postNotes (params)
+      }
+      setGetTrig(true);
+    }
   };
+
+    const handleClear = async () => {
+     if (toUpdate){ 
+      await deleteNotes({date});
+     }
+      setGetTrig(true);
+      setNotes("");
+      
+    };
 
 
   return (
@@ -47,6 +77,7 @@ export default function Notes ()
       }}
     >
       <Typography sx = {{display: 'flex',height : '15%'}} variant="h6">Note</Typography>
+      <Button onClick={handleClear}> Delete all</Button>
       <Box sx = {{height: '70%', overflow: 'auto',}}>
         <TextField
         multiline
