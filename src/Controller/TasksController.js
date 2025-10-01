@@ -35,10 +35,16 @@ export function updateTaskContents(params) {
 export function getTaskContents(params) {
   return axios
     .get(baseURL + "/api/Task/GetTaskContent", { params })
-    .then((res) => {
-      console.log(" data returned from getTaskComponents", res.data);
-      return res.data;
-    })
+    .then((res) => res.data)
+    .catch((err) => {
+      console.error("Error:", err);
+      throw err;
+    });
+}
+export function updateStatus(params) {
+  return axios
+    .put(baseURL + "/api/Task/UpdateTaskContentStatus", params)
+    .then((res) => res.data)
     .catch((err) => {
       console.error("Error:", err);
       throw err;

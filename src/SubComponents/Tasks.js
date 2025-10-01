@@ -4,6 +4,7 @@ import {
   postTaskContents,
   getTaskContents,
   updateTasksOrder,
+  updateStatus,
 } from "../Controller/TasksController";
 import {
   Popper,
@@ -21,8 +22,7 @@ export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const id = 1;
   const [showOptions, setShowOptions] = useState(false);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [taskStatus, setTaskStatus] = useState({});
+  const [tasksIndex, setTasksIndex] = useState(0);
   const [anchorRef, setAnchorRef] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [getTrig, setGetTrig] = useState(false);
@@ -46,6 +46,7 @@ export default function Tasks() {
   }, [getTrig]);
 
   const handleClick = (taskIndex, anchorElement) => {
+    setTasksIndex(taskIndex);
     setAnchorRef(anchorElement);
     setShowOptions((prev) => !prev);
   };
@@ -53,9 +54,20 @@ export default function Tasks() {
   const handleOptionSelect = (taskIndex, option) => {
     const updatedTasks = [...tasks];
     updatedTasks[taskIndex].status = statusOptions.indexOf(option);
-    updatedTasks[taskIndex].status_modified = new Date();
+    updatedTasks[taskIndex].status_modified = getDateTime();
     setTasks(updatedTasks);
-    setTaskStatus((prev) => ({ ...prev, [taskIndex]: option }));
+    handleStatusSave(taskIndex);
+  };
+
+  const handleStatusSave = async (e) => {
+    const params = {
+      id: tasks[e].id,
+      title_id: tasks[e].title_id,
+      status: tasks[e].status,
+      status_modified: tasks[e].status_modified,
+    };
+    await updateStatus(params);
+    setGetTrig(false);
     setShowOptions(false);
   };
 
@@ -64,7 +76,6 @@ export default function Tasks() {
     updatedTask[index].task_details = value;
     setTasks(updatedTask);
   };
-
   const addNote = () => {
     setTasks([
       ...tasks,
@@ -120,7 +131,6 @@ export default function Tasks() {
     setIsEditing(false);
     setOrigTask("");
   };
-  // Drag-and-Drop handler
   const onDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination || source.index === destination.index) return;
@@ -129,7 +139,6 @@ export default function Tasks() {
     const [movedTask] = reorderedTasks.splice(source.index, 1);
     reorderedTasks.splice(destination.index, 0, movedTask);
     setTasks(reorderedTasks);
-    console.log(tasks, " this is tasks");
   };
   return (
     <div style={{ width: "100%" }}>
@@ -140,7 +149,6 @@ export default function Tasks() {
         )}
       </Grid>
 
-      {/* Drag-and-drop context */}
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="tasks" direction="vertical">
           {(provided) => (
@@ -220,7 +228,7 @@ export default function Tasks() {
                           }
                           style={{ padding: "5px 15px", marginRight: "10px" }}
                         >
-                          {taskStatus[index] ? taskStatus[index] : "New"}
+                          {statusOptions[task.status]}
                         </button>
                         <TextField
                           type="text"
@@ -275,7 +283,10 @@ export default function Tasks() {
                                         <MenuItem
                                           key={optionIndex}
                                           onClick={() =>
-                                            handleOptionSelect(index, option)
+                                            handleOptionSelect(
+                                              tasksIndex,
+                                              option
+                                            )
                                           }
                                           sx={{
                                             minWidth: "auto",
