@@ -3,7 +3,17 @@ const baseURL = "https://localhost:7270";
 
 export function postTaskContents(params) {
   return axios
-    .post(baseURL + "/api/Task/SaveTaskContent", params)
+    .post(baseURL + "/api/Task/AddNewTaskContent", params)
+    .then((res) => res.data)
+    .catch((err) => {
+      console.error("Error:", err);
+      throw err;
+    });
+}
+
+export function modifyTaskContent(params) {
+  return axios
+    .put(baseURL + "/api/Task/ModTaskContent", params)
     .then((res) => res.data)
     .catch((err) => {
       console.error("Error:", err);

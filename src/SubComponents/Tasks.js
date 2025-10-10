@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Box, Button, Grid, TextField, Typography } from "@mui/material";
 import {
+  modifyTaskContent,
   postTaskContents,
   getTaskContents,
   updateTasksOrder,
@@ -22,28 +23,40 @@ export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const id = 1;
   const [showOptions, setShowOptions] = useState(false);
-  const [tasksIndex, setTasksIndex] = useState(0);
+  const [tasksIndex, setTasksIndex] = useState(0); // index holder for which item changed status
+  const [taskModIndex, setTaskModIndex] = useState(""); // index for task mod save or cancel
   const [anchorRef, setAnchorRef] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [getTrig, setGetTrig] = useState(false);
+  const [getTrig, setGetTrig] = useState(true);
   const [orderChanged, setOrderChanged] = useState(false);
-  const [origTask, setOrigTask] = useState();
+  const [origTask, setOrigTask] = useState("");
+
+  const inputRef = useRef([]);
 
   const statusOptions = ["New", "In Progress", "Completed", "On Hold"];
-
   useEffect(() => {
-    if (getTrig === false) {
+    if (getTrig === true) {
+      console.log("here in trig");
       const fetchNotes = async () => {
         const data = await getTaskContents({ id });
         if (data != null) {
+          console.log(data, " this is data");
           setTasks(data);
+          if (origTask == "") {
+            setOrigTask(data);
+          }
         }
       };
       fetchNotes();
     }
 
-    setGetTrig(true);
+    setGetTrig(false);
   }, [getTrig]);
+  const deleteTask = (index) => {
+    const updatedTask = [...tasks];
+    updatedTask.splice(index, 1);
+    setTasks(updatedTask);
+  };
 
   const handleClick = (taskIndex, anchorElement) => {
     setTasksIndex(taskIndex);
@@ -67,15 +80,21 @@ export default function Tasks() {
       status_modified: tasks[e].status_modified,
     };
     await updateStatus(params);
-    setGetTrig(false);
+    setGetTrig(true);
     setShowOptions(false);
   };
 
-  const handleTaskChange = (index, value) => {
-    const updatedTask = [...tasks];
-    updatedTask[index].task_details = value;
-    setTasks(updatedTask);
+  const handleAddNewTaskContent = async (i) => {
+    const params = {
+      id: tasks[i].id,
+      title_id: tasks[i].title_id,
+      task_details: tasks[i].task_details,
+      task_order: tasks.length,
+      date_created: tasks[i].date_created,
+    };
+    await postTaskContents(params);
   };
+
   const addNote = () => {
     setTasks([
       ...tasks,
@@ -87,11 +106,47 @@ export default function Tasks() {
       },
     ]);
   };
+  const handleOnBlur = () => {
+    setTaskModIndex("");
+  };
 
-  const deleteTask = (index) => {
+  const handleFocus = (index) => {
+    setTaskModIndex(index);
+  };
+  const handleKeyDown = (e, index) => {
+    if (e.key === "Enter") {
+      if (inputRef.current[index]) {
+        inputRef.current[index].blur();
+      }
+
+      console.log(origTask[index], " this is orig");
+      handleModTaskContent(index);
+    }
+  };
+
+  const handleTaskChange = (index, value) => {
+    console.log(origTask, " this is orig");
     const updatedTask = [...tasks];
-    updatedTask.splice(index, 1);
+    updatedTask[index].task_details = value;
     setTasks(updatedTask);
+  };
+
+  const handleModTaskContent = (i) => {
+    if (origTask[i].task_details !== tasks[i].task_details) {
+      saveModifiedTaskContent(i);
+      setGetTrig(true);
+    }
+  };
+
+  const saveModifiedTaskContent = async (i) => {
+    const params = {
+      id: tasks[i].id,
+      title_id: tasks[i].title_id,
+      task_order: tasks[i].task_order,
+      task_details: tasks[i].task_details,
+      date_created: tasks[i].date_created,
+    };
+    await modifyTaskContent(params);
   };
 
   const handleClose = (event) => {
@@ -102,7 +157,6 @@ export default function Tasks() {
   };
   const handleEditOrder = () => {
     setIsEditing(true);
-    setOrigTask(tasks);
   };
   const handleSaveOrderChange = async () => {
     if (orderChanged === true) {
@@ -111,10 +165,10 @@ export default function Tasks() {
       );
       await updateTasksOrder(newData);
 
-      setGetTrig(false);
+      setGetTrig(true);
     }
   };
-  const handleOrderChanges = async () => {
+  const handleOrderChanges = () => {
     const taskCount = tasks.length;
     for (let i = 0; i < taskCount; i++) {
       if (origTask[i].id === tasks[i].id) {
@@ -129,8 +183,8 @@ export default function Tasks() {
     }
     setOrderChanged(false);
     setIsEditing(false);
-    setOrigTask("");
   };
+
   const onDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination || source.index === destination.index) return;
@@ -232,22 +286,45 @@ export default function Tasks() {
                         </button>
                         <TextField
                           type="text"
+                          inputRef={(el) => (inputRef.current[index] = el)}
+                          onFocus={(e) => handleFocus(index)}
+                          onBlur={(e) => handleOnBlur(index)}
+                          onKeyDown={(e) => handleKeyDown(e, index)}
                           value={task.task_details}
                           onChange={(e) =>
                             handleTaskChange(index, e.target.value)
                           }
                           sx={{ marginTop: "10px", width: "500px" }}
-                        />
-                        <button
-                          onClick={() => deleteTask(index)}
-                          style={{
-                            marginLeft: "10px",
-                            background: "red",
-                            color: "white",
-                          }}
-                        >
-                          -
-                        </button>
+                        />{" "}
+                        {index === taskModIndex && (
+                          <Box
+                            sx={{
+                              marginLeft: 1,
+                              display: "flex",
+                              flexDirection: "row",
+                              gap: 1,
+                            }}
+                          >
+                            <Button variant="contained" color="primary">
+                              x
+                            </Button>
+                            <Button variant="contained" color="primary">
+                              x
+                            </Button>
+                          </Box>
+                        )}
+                        {isEditing && (
+                          <button
+                            onClick={() => deleteTask(index)}
+                            style={{
+                              marginLeft: "10px",
+                              background: "red",
+                              color: "white",
+                            }}
+                          >
+                            -
+                          </button>
+                        )}
                         <Popper
                           sx={{ zIndex: 1 }}
                           open={showOptions && anchorRef}
