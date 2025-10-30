@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Box, Button, Grid, TextField, Typography } from "@mui/material";
+import { Box, Button, Grid, TextField, Typography, Modal } from "@mui/material";
 import {
   modifyTaskContent,
   postTaskContents,
   getTaskContents,
+  deleteTaskContent,
   updateTasksOrder,
   updateStatus,
 } from "../Controller/TasksController";
@@ -18,18 +19,30 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../App.css";
 import { getDateTime } from "../mainslice/commonUtils";
-
+import Modals from "../mainslice/commonModal";
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
-  const id = 1;
+  const id = 1; //title id (for now)
   const [showOptions, setShowOptions] = useState(false);
   const [tasksIndex, setTasksIndex] = useState(0); // index holder for which item changed status
   const [taskModIndex, setTaskModIndex] = useState(""); // index for task mod save or cancel
   const [anchorRef, setAnchorRef] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [getTrig, setGetTrig] = useState(true);
+
   const [orderChanged, setOrderChanged] = useState(false);
   const [origTask, setOrigTask] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const [addNew, setAddNew] = useState(false);
+  const [continued, setContinue] = useState(false);
+
+  /// Modal control
+  const mes = "Do you want to save your changes?";
+  const [showModal, setShowModal] = useState("");
+  const [message, setMessage] = useState(mes);
+  const [option1, setOption1] = useState("Yes");
+  const [option2, setOption2] = useState("No");
 
   const inputRef = useRef([]);
 
@@ -84,18 +97,62 @@ export default function Tasks() {
     setShowOptions(false);
   };
 
-  const handleAddNewTaskContent = async (i) => {
+  const handleResponse = (res) => {
+    if (addNew === true || hasChanges === true) {
+      handleAddModTask(res);
+    }
+  };
+
+  const handleAddModTask = (res) => {
+    const i = taskModIndex;
+    if (addNew === true) {
+      if (hasChanges === false) {
+        if (res === 0) {
+          continueEditing();
+        } else {
+          handleCancelNewTask(i);
+        }
+      } else {
+        if (res === 0) {
+          handleAddNewTaskContent(i);
+        } else {
+          handleCancelNewTask(i);
+        }
+      }
+    } else {
+      if (res === 0) {
+        handleModTaskContent(i);
+      } else {
+        handleClickCancel();
+      }
+    }
+  };
+  const continueEditing = () => {
+    setContinue(true);
+    setShowModal(false);
+  };
+  const handleCancelNewTask = (i) => {
+    const updatedTask = [...tasks];
+    updatedTask.splice(i, 1);
+    setTasks(updatedTask);
+  };
+  const handleAddNewTaskContent = (i) => {
+    setAddNew(false);
+    setHasChanges(false);
+    saveNewTaskContent(i);
+  };
+  const saveNewTaskContent = async (i) => {
     const params = {
       id: tasks[i].id,
       title_id: tasks[i].title_id,
       task_details: tasks[i].task_details,
-      task_order: tasks.length,
+      task_order: tasks[i].task_order,
       date_created: tasks[i].date_created,
     };
     await postTaskContents(params);
   };
 
-  const addNote = () => {
+  const addTask = () => {
     setTasks([
       ...tasks,
       {
@@ -106,9 +163,6 @@ export default function Tasks() {
       },
     ]);
   };
-  const handleOnBlur = () => {
-    setTaskModIndex("");
-  };
 
   const handleFocus = (index) => {
     setTaskModIndex(index);
@@ -118,8 +172,6 @@ export default function Tasks() {
       if (inputRef.current[index]) {
         inputRef.current[index].blur();
       }
-
-      console.log(origTask[index], " this is orig");
       handleModTaskContent(index);
     }
   };
@@ -130,14 +182,39 @@ export default function Tasks() {
     updatedTask[index].task_details = value;
     setTasks(updatedTask);
   };
-
-  const handleModTaskContent = (i) => {
-    if (origTask[i].task_details !== tasks[i].task_details) {
+  const handleClickSave = (i) => {
+    if (addNew === true) {
+      if (hasChanges === false) {
+        handleOnBlur();
+      } else {
+        handleAddNewTaskContent(i);
+      }
+    } else {
       saveModifiedTaskContent(i);
-      setGetTrig(true);
     }
   };
+  const handleClickCancel = () => {
+    if (addNew === true) {
+      handleCancelNewTask(taskModIndex);
+    }
+  };
+  const handleModTaskContent = (i) => {
+    saveModifiedTaskContent(i);
+  };
 
+  const handleOnBlur = () => {
+    if (hasChanges === true || addNew === true) {
+      setShowModal(true);
+      if (addNew === true) {
+        if (tasks[taskModIndex].task_details === "") {
+          setHasChanges(false);
+          setMessage("Do you want to continue editing?");
+        }
+      }
+    } else {
+      setTaskModIndex("");
+    }
+  };
   const saveModifiedTaskContent = async (i) => {
     const params = {
       id: tasks[i].id,
@@ -168,6 +245,7 @@ export default function Tasks() {
       setGetTrig(true);
     }
   };
+
   const handleOrderChanges = () => {
     const taskCount = tasks.length;
     for (let i = 0; i < taskCount; i++) {
@@ -196,6 +274,13 @@ export default function Tasks() {
   };
   return (
     <div style={{ width: "100%" }}>
+      <Modals
+        open={showModal}
+        message={message}
+        option1={option1}
+        option2={option2}
+        response={handleResponse}
+      />
       <Grid container justifyContent="flex-end">
         {isEditing === false && <Button onClick={handleEditOrder}>Edit</Button>}
         {isEditing === true && (
@@ -203,195 +288,207 @@ export default function Tasks() {
         )}
       </Grid>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="tasks" direction="vertical">
-          {(provided) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              style={{ padding: "10px 0" }}
-            >
-              {tasks.map((task, index) => (
-                <Draggable
-                  key={task.id}
-                  draggableId={String(task.id)}
-                  index={index}
-                >
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      style={{
-                        ...provided.draggableProps.style,
-                        marginBottom: "10px",
-                        padding: "10px",
-                        borderRadius: "4px",
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
+      {tasks !== "" && (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="tasks" direction="vertical">
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                style={{ padding: "10px 0" }}
+              >
+                {tasks.map((task, index) => (
+                  <Draggable
+                    key={task.id}
+                    draggableId={String(task.id)}
+                    index={index}
+                  >
+                    {(provided) => (
                       <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
                         style={{
+                          ...provided.draggableProps.style,
+                          marginBottom: "10px",
+                          padding: "10px",
+                          borderRadius: "4px",
                           display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
+                          flexDirection: "column",
                         }}
                       >
-                        {isEditing === true && (
-                          <div
-                            style={{
-                              cursor: "grab",
-                              padding: "5px 10px",
-                              borderRadius: "4px",
-                            }}
-                            {...provided.dragHandleProps}
-                          >
-                            ☰
-                          </div>
-                        )}
-
-                        <TextField
-                          sx={{
-                            width: "500px",
-                            "& .MuiInputBase-root": {
-                              border: "none",
-                              "& fieldset": {
-                                border: "none",
-                              },
-                            },
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
                           }}
-                          type="text"
-                          value={task.date_created}
-                          readOnly
-                        />
-                      </div>
-
-                      {/* Status & Task Content */}
-                      <div
-                        className="custom-button-container"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          marginTop: "10px",
-                        }}
-                      >
-                        <button
-                          className="custom-button"
-                          onClick={(event) =>
-                            handleClick(index, event.currentTarget)
-                          }
-                          style={{ padding: "5px 15px", marginRight: "10px" }}
                         >
-                          {statusOptions[task.status]}
-                        </button>
-                        <TextField
-                          type="text"
-                          inputRef={(el) => (inputRef.current[index] = el)}
-                          onFocus={(e) => handleFocus(index)}
-                          onBlur={(e) => handleOnBlur(index)}
-                          onKeyDown={(e) => handleKeyDown(e, index)}
-                          value={task.task_details}
-                          onChange={(e) =>
-                            handleTaskChange(index, e.target.value)
-                          }
-                          sx={{ marginTop: "10px", width: "500px" }}
-                        />{" "}
-                        {index === taskModIndex && (
-                          <Box
-                            sx={{
-                              marginLeft: 1,
-                              display: "flex",
-                              flexDirection: "row",
-                              gap: 1,
-                            }}
-                          >
-                            <Button variant="contained" color="primary">
-                              x
-                            </Button>
-                            <Button variant="contained" color="primary">
-                              x
-                            </Button>
-                          </Box>
-                        )}
-                        {isEditing && (
-                          <button
-                            onClick={() => deleteTask(index)}
-                            style={{
-                              marginLeft: "10px",
-                              background: "red",
-                              color: "white",
-                            }}
-                          >
-                            -
-                          </button>
-                        )}
-                        <Popper
-                          sx={{ zIndex: 1 }}
-                          open={showOptions && anchorRef}
-                          anchorEl={anchorRef}
-                          role={undefined}
-                          transition
-                          disablePortal
-                        >
-                          {({ TransitionProps, placement }) => (
-                            <Grow
-                              {...TransitionProps}
+                          {isEditing === true && (
+                            <div
                               style={{
-                                transformOrigin:
-                                  placement === "bottom"
-                                    ? "center top"
-                                    : "center bottom",
+                                cursor: "grab",
+                                padding: "5px 10px",
+                                borderRadius: "4px",
+                              }}
+                              {...provided.dragHandleProps}
+                            >
+                              ☰
+                            </div>
+                          )}
+
+                          <TextField
+                            sx={{
+                              width: "500px",
+                              "& .MuiInputBase-root": {
+                                border: "none",
+                                "& fieldset": {
+                                  border: "none",
+                                },
+                              },
+                            }}
+                            type="text"
+                            value={task.date_created}
+                            readOnly
+                          />
+                        </div>
+
+                        {/* Status & Task Content */}
+                        <div
+                          className="custom-button-container"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginTop: "10px",
+                          }}
+                        >
+                          <button
+                            className="custom-button"
+                            onClick={(event) =>
+                              handleClick(index, event.currentTarget)
+                            }
+                            style={{ padding: "5px 15px", marginRight: "10px" }}
+                          >
+                            {statusOptions[task.status]}
+                          </button>
+                          <TextField
+                            type="text"
+                            inputRef={(el) => (inputRef.current[index] = el)}
+                            onFocus={(e) => handleFocus(index)}
+                            onBlur={(e) => handleOnBlur(index)}
+                            onKeyDown={(e) => handleKeyDown(e, index)}
+                            value={task.task_details}
+                            onChange={(e) =>
+                              handleTaskChange(index, e.target.value)
+                            }
+                            sx={{ marginTop: "10px", width: "500px" }}
+                          />{" "}
+                          {index === taskModIndex && (
+                            <Box
+                              sx={{
+                                marginLeft: 1,
+                                display: "flex",
+                                flexDirection: "row",
+                                gap: 1,
                               }}
                             >
-                              <Paper>
-                                <ClickAwayListener onClickAway={handleClose}>
-                                  <MenuList
-                                    autoFocusItem
-                                    sx={{
-                                      display: "flex",
-                                      flexDirection: "row",
-                                      padding: 0,
-                                      gap: "10px",
-                                      margin: 0.5,
-                                    }}
-                                  >
-                                    {statusOptions.map(
-                                      (option, optionIndex) => (
-                                        <MenuItem
-                                          key={optionIndex}
-                                          onClick={() =>
-                                            handleOptionSelect(
-                                              tasksIndex,
-                                              option
-                                            )
-                                          }
-                                          sx={{
-                                            minWidth: "auto",
-                                            padding: "5px 15px",
-                                          }}
-                                        >
-                                          {option}
-                                        </MenuItem>
-                                      )
-                                    )}
-                                  </MenuList>
-                                </ClickAwayListener>
-                              </Paper>
-                            </Grow>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onMouseDown={() =>
+                                  handleClickSave(taskModIndex)
+                                }
+                              >
+                                yes
+                              </Button>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onMouseDown={handleClickCancel}
+                              >
+                                no
+                              </Button>
+                            </Box>
                           )}
-                        </Popper>
+                          {isEditing && (
+                            <button
+                              onClick={() => deleteTask(index)}
+                              style={{
+                                marginLeft: "10px",
+                                background: "red",
+                                color: "white",
+                              }}
+                            >
+                              -
+                            </button>
+                          )}
+                          <Popper
+                            sx={{ zIndex: 1 }}
+                            open={showOptions && anchorRef}
+                            anchorEl={anchorRef}
+                            role={undefined}
+                            transition
+                            disablePortal
+                          >
+                            {({ TransitionProps, placement }) => (
+                              <Grow
+                                {...TransitionProps}
+                                style={{
+                                  transformOrigin:
+                                    placement === "bottom"
+                                      ? "center top"
+                                      : "center bottom",
+                                }}
+                              >
+                                <Paper>
+                                  <ClickAwayListener onClickAway={handleClose}>
+                                    <MenuList
+                                      autoFocusItem
+                                      sx={{
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        padding: 0,
+                                        gap: "10px",
+                                        margin: 0.5,
+                                      }}
+                                    >
+                                      {statusOptions.map(
+                                        (option, optionIndex) => (
+                                          <MenuItem
+                                            key={optionIndex}
+                                            onClick={() =>
+                                              handleOptionSelect(
+                                                tasksIndex,
+                                                option
+                                              )
+                                            }
+                                            sx={{
+                                              minWidth: "auto",
+                                              padding: "5px 15px",
+                                            }}
+                                          >
+                                            {option}
+                                          </MenuItem>
+                                        )
+                                      )}
+                                    </MenuList>
+                                  </ClickAwayListener>
+                                </Paper>
+                              </Grow>
+                            )}
+                          </Popper>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
 
-      <button onClick={addNote}>+ Add Note</button>
+      {addNew === false && <button onClick={addTask}>+ Add Task</button>}
     </div>
   );
 }
