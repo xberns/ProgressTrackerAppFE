@@ -22,19 +22,8 @@ export function modifyTaskContent(params) {
 }
 
 export function updateTasksOrder(params) {
-  console.log(params, " this is params");
   return axios
     .put(baseURL + "/api/Task/UpdateTasksOrder", params)
-    .then((res) => res.data)
-    .catch((err) => {
-      console.error("Error:", err);
-      throw err;
-    });
-}
-
-export function updateTaskContents(params) {
-  return axios
-    .put(baseURL + "/api/Notes", params)
     .then((res) => res.data)
     .catch((err) => {
       console.error("Error:", err);
@@ -45,7 +34,12 @@ export function updateTaskContents(params) {
 export function getTaskContents(params) {
   return axios
     .get(baseURL + "/api/Task/GetTaskContent", { params })
-    .then((res) => res.data)
+    .then((res) => {
+      if (res.data.task) {
+        return res.data.task;
+      }
+      return res.data;
+    })
     .catch((err) => {
       console.error("Error:", err);
       throw err;
@@ -61,9 +55,12 @@ export function updateStatus(params) {
     });
 }
 
-export function deleteNotes(params) {
+export function deleteTaskContent(params) {
   return axios
-    .delete(baseURL + "/api/Notes", { params })
+    .delete(baseURL + "/api/Task/DeleteTasksContent", {
+      data: params,
+      headers: { "Content-Type": "application/json" },
+    })
     .then((res) => res.data[0])
     .catch((err) => {
       console.error("Error:", err);
