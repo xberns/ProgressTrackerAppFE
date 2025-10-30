@@ -22,7 +22,7 @@ import { getDateTime } from "../mainslice/commonUtils";
 import Modals from "../mainslice/commonModal";
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
-  const id = 1; //title id (for now)
+  const id = 1; //title id (as of now)
   const [showOptions, setShowOptions] = useState(false);
   const [tasksIndex, setTasksIndex] = useState(0); // index holder for which item changed status
   const [taskModIndex, setTaskModIndex] = useState(""); // index for task mod save or cancel
@@ -31,6 +31,7 @@ export default function Tasks() {
   const [getTrig, setGetTrig] = useState(true);
 
   const [orderChanged, setOrderChanged] = useState(false);
+
   const [origTask, setOrigTask] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -49,15 +50,12 @@ export default function Tasks() {
   const statusOptions = ["New", "In Progress", "Completed", "On Hold"];
   useEffect(() => {
     if (getTrig === true) {
-      console.log("here in trig");
       const fetchNotes = async () => {
         const data = await getTaskContents({ id });
-        if (data != null) {
-          console.log(data, " this is data");
+        if (data === "0") {
+          setTasks("");
+        } else if (data != null) {
           setTasks(data);
-          if (origTask == "") {
-            setOrigTask(data);
-          }
         }
       };
       fetchNotes();
@@ -135,6 +133,8 @@ export default function Tasks() {
     const updatedTask = [...tasks];
     updatedTask.splice(i, 1);
     setTasks(updatedTask);
+
+    setDefault();
   };
   const handleAddNewTaskContent = (i) => {
     setAddNew(false);
@@ -150,6 +150,7 @@ export default function Tasks() {
       date_created: tasks[i].date_created,
     };
     await postTaskContents(params);
+    setDefault();
   };
 
   const addTask = () => {
@@ -177,7 +178,7 @@ export default function Tasks() {
   };
 
   const handleTaskChange = (index, value) => {
-    console.log(origTask, " this is orig");
+    setHasChanges(true);
     const updatedTask = [...tasks];
     updatedTask[index].task_details = value;
     setTasks(updatedTask);
@@ -191,15 +192,38 @@ export default function Tasks() {
       }
     } else {
       saveModifiedTaskContent(i);
+      setDefault();
     }
   };
   const handleClickCancel = () => {
     if (addNew === true) {
       handleCancelNewTask(taskModIndex);
-    }
+    } else setDefault();
   };
   const handleModTaskContent = (i) => {
     saveModifiedTaskContent(i);
+    setDefault();
+  };
+
+  const setDefault = () => {
+    if (hasChanges === false) {
+      if (addNew === true) {
+      }
+      setTaskModIndex("");
+    } else {
+      setGetTrig(true);
+      setHasChanges(false);
+      setTaskModIndex("");
+    }
+
+    if (addNew === true) {
+      setAddNew(false);
+      setContinue(false);
+    }
+    if (showModal === true) {
+      setShowModal(false);
+      setMessage(mes);
+    }
   };
 
   const handleOnBlur = () => {
