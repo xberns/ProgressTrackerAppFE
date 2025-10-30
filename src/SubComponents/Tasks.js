@@ -63,11 +63,6 @@ export default function Tasks() {
 
     setGetTrig(false);
   }, [getTrig]);
-  const deleteTask = (index) => {
-    const updatedTask = [...tasks];
-    updatedTask.splice(index, 1);
-    setTasks(updatedTask);
-  };
 
   const handleClick = (taskIndex, anchorElement) => {
     setTasksIndex(taskIndex);
@@ -98,9 +93,32 @@ export default function Tasks() {
   const handleResponse = (res) => {
     if (addNew === true || hasChanges === true) {
       handleAddModTask(res);
+    } else {
+      handleDeleteTask(res);
     }
   };
-
+  const handleDeleteTask = (res) => {
+    if (res === 0) {
+      removeTask(tasksIndex);
+    } else {
+      setDefault();
+    }
+    setTasksIndex("");
+  };
+  const deleteTask = (index) => {
+    setShowModal(true);
+    setTasksIndex(index);
+    setMessage("Do you want to delete this task?");
+  };
+  const removeTask = async (i) => {
+    const params = {
+      id: tasks[i].id,
+      title_id: tasks[i].title_id,
+    };
+    await deleteTaskContent(params);
+    setGetTrig(true);
+    setDefault();
+  };
   const handleAddModTask = (res) => {
     const i = taskModIndex;
     if (addNew === true) {
