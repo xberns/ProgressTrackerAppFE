@@ -31,8 +31,6 @@ export default function Tasks() {
   const [getTrig, setGetTrig] = useState(true);
 
   const [orderChanged, setOrderChanged] = useState(false);
-
-  const [origTask, setOrigTask] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
 
   const [addNew, setAddNew] = useState(false);
@@ -292,8 +290,8 @@ export default function Tasks() {
     }
     setShowOptions(false);
   };
-  const handleEditOrder = () => {
-    setIsEditing(true);
+  const handleEditOrder = (b) => {
+    setIsEditing(b);
   };
   const handleSaveOrderChange = async () => {
     if (orderChanged === true) {
@@ -306,22 +304,13 @@ export default function Tasks() {
     }
   };
 
-  const handleOrderChanges = () => {
-    const taskCount = tasks.length;
-    for (let i = 0; i < taskCount; i++) {
-      if (origTask[i].id === tasks[i].id) {
-        if (i === taskCount) {
-          break;
-        }
-        continue;
-      } else {
-        handleSaveOrderChange();
-        break;
-      }
+  useEffect(() => {
+    if (orderChanged === true) {
+      handleSaveOrderChange();
     }
     setOrderChanged(false);
-    setIsEditing(false);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderChanged]);
 
   const onDragEnd = (result) => {
     const { source, destination } = result;
@@ -342,9 +331,11 @@ export default function Tasks() {
         response={handleResponse}
       />
       <Grid container justifyContent="flex-end">
-        {isEditing === false && <Button onClick={handleEditOrder}>Edit</Button>}
+        {isEditing === false && (
+          <Button onClick={() => handleEditOrder(true)}>Edit</Button>
+        )}
         {isEditing === true && (
-          <Button onClick={handleOrderChanges}>StopEdit</Button>
+          <Button onClick={() => handleEditOrder(false)}>StopEdit</Button>
         )}
       </Grid>
 
