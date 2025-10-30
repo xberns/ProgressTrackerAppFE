@@ -175,13 +175,31 @@ export default function Tasks() {
     setTasks([
       ...tasks,
       {
+        title_id: 1,
+        task_order: tasks.length === 0 ? 0 : tasks.length,
         task_details: "",
         date_created: getDateTime(),
         status: 0,
-        status_modified: getDateTime(),
       },
     ]);
+    setIndex();
   };
+  const setIndex = () => {
+    const i = tasks.length;
+    setTaskModIndex(i);
+    setAddNew(true);
+  };
+  useEffect(() => {
+    const i = taskModIndex;
+    if (addNew === true || continued === true) {
+      if (inputRef.current[i]) {
+        inputRef.current[i].focus();
+      }
+      setContinue(false);
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addNew, continued]);
 
   const handleFocus = (index) => {
     setTaskModIndex(index);
