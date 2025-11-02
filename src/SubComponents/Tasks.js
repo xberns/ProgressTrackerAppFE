@@ -20,6 +20,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../App.css";
 import { getDateTime } from "../mainslice/commonUtils";
 import Modals from "../mainslice/commonModal";
+import SubTasks from "./SubTasks";
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const id = 1; //title id (as of now)
@@ -34,7 +35,7 @@ export default function Tasks() {
   const [hasChanges, setHasChanges] = useState(false);
 
   const [addNew, setAddNew] = useState(false);
-  const [continued, setContinue] = useState(false);
+  const [continued, setContinue] = useState(false); //Continued editing contents
 
   /// Modal control
   const mes = "Do you want to save your changes?";
@@ -48,7 +49,7 @@ export default function Tasks() {
   const statusOptions = ["New", "In Progress", "Completed", "On Hold"];
   useEffect(() => {
     if (getTrig === true) {
-      const fetchNotes = async () => {
+      const fetchTasks = async () => {
         const data = await getTaskContents({ id });
         if (data === "0") {
           setTasks("");
@@ -56,7 +57,7 @@ export default function Tasks() {
           setTasks(data);
         }
       };
-      fetchNotes();
+      fetchTasks();
     }
 
     setGetTrig(false);
@@ -402,7 +403,6 @@ export default function Tasks() {
                             readOnly
                           />
                         </div>
-
                         {/* Status & Task Content */}
                         <div
                           className="custom-button-container"
@@ -528,6 +528,10 @@ export default function Tasks() {
                             )}
                           </Popper>
                         </div>
+                        <SubTasks
+                          content_id={task.id}
+                          isEditing={isEditing}
+                        ></SubTasks>
                       </div>
                     )}
                   </Draggable>
