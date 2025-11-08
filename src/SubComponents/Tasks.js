@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Box, Button, Grid, TextField, Typography, Modal } from "@mui/material";
 import {
+  getAllSubTask,
   modifyTaskContent,
   postTaskContents,
   getTaskContents,
@@ -28,9 +29,11 @@ export default function Tasks() {
   const [tasksIndex, setTasksIndex] = useState(0); // index holder for which item changed status
   const [taskModIndex, setTaskModIndex] = useState(""); // index for task mod save or cancel
   const [anchorRef, setAnchorRef] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
   const [getTrig, setGetTrig] = useState(true);
 
+  const [subTask, setSubTask] = useState([]);
+  const [getSubTask, setGetSubTask] = useState(true);
   const [orderChanged, setOrderChanged] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -62,7 +65,31 @@ export default function Tasks() {
 
     setGetTrig(false);
   }, [getTrig]);
+  useEffect(() => {
+    if (getSubTask === true) {
+      const fetchSubtask = async () => {
+        const data = await getAllSubTask({ id });
+        if (data === "0") {
+          setSubTask("");
+        } else if (data != null) {
+          setSubTask(data);
+        }
+      };
+      fetchSubtask();
+    }
 
+    setGetTrig(false);
+  }, [getSubTask]);
+
+  const subtaskPerTask = subTask.reduce((subtask, contents) => {
+    if (!subtask[contents.content_id]) subtask[contents.content_id] = [];
+    subtask[contents.content_id].push(contents);
+
+    return subtask;
+  }, {});
+  const handleGetSubTaskTrig = (trig) => {
+    setGetSubTask(trig);
+  };
   const handleClick = (taskIndex, anchorElement) => {
     setTasksIndex(taskIndex);
     setAnchorRef(anchorElement);
@@ -322,6 +349,7 @@ export default function Tasks() {
     reorderedTasks.splice(destination.index, 0, movedTask);
     setTasks(reorderedTasks);
   };
+  console.log("hi");
   return (
     <div style={{ width: "100%" }}>
       <Modals
@@ -528,10 +556,14 @@ export default function Tasks() {
                             )}
                           </Popper>
                         </div>
-                        <SubTasks
-                          content_id={task.id}
-                          isEditing={isEditing}
-                        ></SubTasks>
+                        {
+                          <SubTasks
+                            content_id={task.id}
+                            isEditing={isEditing}
+                            subtask={subtaskPerTask[task.id] || []}
+                            trig={handleGetSubTaskTrig}
+                          ></SubTasks>
+                        }
                       </div>
                     )}
                   </Draggable>

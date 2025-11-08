@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react"; // remider to orgaanize the functions  and vaariables after finalizing task functionality
 import { Box, Button, TextField } from "@mui/material";
 import {
   modifySubTask,
@@ -24,13 +24,14 @@ export default function SubTasks(props) {
   const id = props.content_id; //title id (as of now)
   const isEditing = props.isEditing;
 
-  const [subtasks, setSubtasks] = useState([]);
+  const [subtasks, setSubtasks] = useState(props.subtask);
+
   const [showOptions, setShowOptions] = useState(false);
   const [tasksIndex, setTasksIndex] = useState(0); // index holder for which item changed status
   const [taskModIndex, setTaskModIndex] = useState(""); // index for task mod save or cancel
   const [anchorRef, setAnchorRef] = useState(null);
 
-  const [getTrig, setGetTrig] = useState(true);
+  const [getTrig, setGetTrig] = useState(false);
 
   const [orderChanged, setOrderChanged] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -86,7 +87,7 @@ export default function SubTasks(props) {
       status_modified: subtasks[e].status_modified,
     };
     await updateSubTaskStatus(params);
-    setGetTrig(true);
+    props.trig(true);
     setShowOptions(false);
   };
 
@@ -116,7 +117,7 @@ export default function SubTasks(props) {
       content_id: subtasks[i].content_id,
     };
     await deleteSubTask(params);
-    setGetTrig(true);
+    props.trig(true);
     setDefault();
   };
   const handleAddModTask = (res) => {
@@ -169,6 +170,7 @@ export default function SubTasks(props) {
       date_created: subtasks[i].date_created,
     };
     await postSubTask(params);
+    props.trig(true);
     setDefault();
   };
 
@@ -251,7 +253,7 @@ export default function SubTasks(props) {
       }
       setTaskModIndex("");
     } else {
-      setGetTrig(true);
+      props.trig(true);
       setHasChanges(false);
       setTaskModIndex("");
     }
@@ -298,13 +300,12 @@ export default function SubTasks(props) {
   };
   const handleSaveOrderChange = async () => {
     if (orderChanged === true) {
-      console.log("this is subtasks", subtasks);
       const newData = subtasks.map(
         ({ taskSubContents, taskTitle, ...rest }) => rest
       );
       await updateSubTasksOrder(newData);
 
-      setGetTrig(true);
+      props.trig(true);
     }
   };
 
