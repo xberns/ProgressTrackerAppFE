@@ -69,6 +69,22 @@ export function updateStatus(params) {
     });
 }
 
+export function getAllSubTask(params) {
+  return axios
+    .get(baseURL + "/api/Task/GetAllSubTask", { params })
+    .then((res) => {
+      if (res.data.subtask) {
+        console.log(res, " this is  res from api", res.data.subtask);
+        return res.data.subtask;
+      }
+      return res.data;
+    })
+    .catch((err) => {
+      console.error("Error:", err);
+      throw err;
+    });
+}
+
 export function getSubTask(params) {
   return axios
     .get(baseURL + "/api/Task/GetSubTask", { params })
