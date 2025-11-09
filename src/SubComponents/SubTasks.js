@@ -49,21 +49,6 @@ export default function SubTasks(props) {
   const inputRef = useRef([]);
 
   const statusOptions = ["New", "In Progress", "Completed", "On Hold"];
-  useEffect(() => {
-    if (getTrig === true) {
-      const fetchSubtask = async () => {
-        const data = await getSubTask({ id });
-        if (data === "0") {
-          setSubtasks("");
-        } else if (data != null) {
-          setSubtasks(data);
-        }
-      };
-      fetchSubtask();
-    }
-
-    setGetTrig(false);
-  }, [getTrig]);
 
   const handleClick = (taskIndex, anchorElement) => {
     setTasksIndex(taskIndex);
@@ -155,7 +140,6 @@ export default function SubTasks(props) {
 
     setDefault();
   };
-
   const handleAddNewTaskContent = (i) => {
     setAddNew(false);
     setHasChanges(false);
@@ -164,6 +148,7 @@ export default function SubTasks(props) {
   const saveNewTaskContent = async (i) => {
     const params = {
       id: subtasks[i].id,
+      title_id: subtasks[i].title_id,
       content_id: subtasks[i].content_id,
       subtask: subtasks[i].subtask,
       subtask_order: subtasks[i].subtask_order,
@@ -178,6 +163,7 @@ export default function SubTasks(props) {
     setSubtasks([
       ...subtasks,
       {
+        title_id: 1,
         content_id: props.content_id,
         subtask_order: subtasks.length === 0 ? 0 : subtasks.length,
         subtask: "",
@@ -284,6 +270,7 @@ export default function SubTasks(props) {
   const saveModifiedTaskContent = async (i) => {
     const params = {
       id: subtasks[i].id,
+      title_id: subtasks[i].title_id,
       content_id: subtasks[i].content_id,
       subtask_order: subtasks[i].subtask_order,
       subtask: subtasks[i].subtask,
