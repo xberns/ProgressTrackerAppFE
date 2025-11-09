@@ -33,7 +33,7 @@ export default function Tasks() {
   const [getTrig, setGetTrig] = useState(true);
 
   const [subTask, setSubTask] = useState([]);
-  const [getSubTask, setGetSubTask] = useState(true);
+  const [getSubTasks, setGetSubTasks] = useState(true);
   const [orderChanged, setOrderChanged] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -50,6 +50,10 @@ export default function Tasks() {
   const inputRef = useRef([]);
 
   const statusOptions = ["New", "In Progress", "Completed", "On Hold"];
+
+  const handleGetSubTaskTrig = (trig) => {
+    setGetSubTasks(trig);
+  };
   useEffect(() => {
     if (getTrig === true) {
       const fetchTasks = async () => {
@@ -66,7 +70,7 @@ export default function Tasks() {
     setGetTrig(false);
   }, [getTrig]);
   useEffect(() => {
-    if (getSubTask === true) {
+    if (getSubTasks === true) {
       const fetchSubtask = async () => {
         const data = await getAllSubTask({ id });
         if (data === "0") {
@@ -77,9 +81,8 @@ export default function Tasks() {
       };
       fetchSubtask();
     }
-
-    setGetTrig(false);
-  }, [getSubTask]);
+    setGetSubTasks(false);
+  }, [getSubTasks]);
 
   const subtaskPerTask = subTask.reduce((subtask, contents) => {
     if (!subtask[contents.content_id]) subtask[contents.content_id] = [];
@@ -87,9 +90,6 @@ export default function Tasks() {
 
     return subtask;
   }, {});
-  const handleGetSubTaskTrig = (trig) => {
-    setGetSubTask(trig);
-  };
   const handleClick = (taskIndex, anchorElement) => {
     setTasksIndex(taskIndex);
     setAnchorRef(anchorElement);
@@ -349,7 +349,6 @@ export default function Tasks() {
     reorderedTasks.splice(destination.index, 0, movedTask);
     setTasks(reorderedTasks);
   };
-  console.log("hi");
   return (
     <div style={{ width: "100%" }}>
       <Modals
