@@ -50,6 +50,10 @@ export default function SubTasks(props) {
 
   const statusOptions = ["New", "In Progress", "Completed", "On Hold"];
 
+  useEffect(() => {
+    setSubtasks(props.subtask);
+  }, [props.subtask]);
+
   const handleClick = (taskIndex, anchorElement) => {
     setTasksIndex(taskIndex);
     setAnchorRef(anchorElement);
