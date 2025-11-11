@@ -74,7 +74,6 @@ export function getAllSubTask(params) {
     .get(baseURL + "/api/Task/GetAllSubTask", { params })
     .then((res) => {
       if (res.data.subtask) {
-        console.log(res, " this is  res from api", res.data.subtask);
         return res.data.subtask;
       }
       return res.data;

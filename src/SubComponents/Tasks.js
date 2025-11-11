@@ -74,7 +74,7 @@ export default function Tasks() {
       const fetchSubtask = async () => {
         const data = await getAllSubTask({ id });
         if (data === "0") {
-          setSubTask("");
+          setSubTask([]);
         } else if (data != null) {
           setSubTask(data);
         }
