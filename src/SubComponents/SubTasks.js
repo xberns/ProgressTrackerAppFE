@@ -21,17 +21,15 @@ import "../App.css";
 import { getDateTime } from "../mainslice/commonUtils";
 import Modals from "../mainslice/commonModal";
 export default function SubTasks(props) {
-  const id = props.content_id; //title id (as of now)
+  const title_id = props.title_id;
+  const content_id = props.content_id;
   const isEditing = props.isEditing;
-
   const [subtasks, setSubtasks] = useState(props.subtask);
 
   const [showOptions, setShowOptions] = useState(false);
   const [tasksIndex, setTasksIndex] = useState(0); // index holder for which item changed status
   const [taskModIndex, setTaskModIndex] = useState(""); // index for task mod save or cancel
   const [anchorRef, setAnchorRef] = useState(null);
-
-  const [getTrig, setGetTrig] = useState(false);
 
   const [orderChanged, setOrderChanged] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -167,8 +165,8 @@ export default function SubTasks(props) {
     setSubtasks([
       ...subtasks,
       {
-        title_id: 1,
-        content_id: props.content_id,
+        title_id: title_id,
+        content_id: content_id,
         subtask_order: subtasks.length === 0 ? 0 : subtasks.length,
         subtask: "",
         date_created: getDateTime(),

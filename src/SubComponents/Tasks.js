@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { Box, Button, Grid, TextField, Typography, Modal } from "@mui/material";
 import {
   getAllSubTask,
@@ -84,12 +84,14 @@ export default function Tasks() {
     setGetSubTasks(false);
   }, [getSubTasks]);
 
-  const subtaskPerTask = subTask.reduce((subtask, contents) => {
-    if (!subtask[contents.content_id]) subtask[contents.content_id] = [];
-    subtask[contents.content_id].push(contents);
-
-    return subtask;
-  }, {});
+  const toSubtask = useMemo(() => {
+    const subtaskPerTask = subTask.reduce((subtask, contents) => {
+      if (!subtask[contents.content_id]) subtask[contents.content_id] = [];
+      subtask[contents.content_id].push(contents);
+      return subtask;
+    }, {});
+    return subtaskPerTask;
+  }, [subTask]);
   const handleClick = (taskIndex, anchorElement) => {
     setTasksIndex(taskIndex);
     setAnchorRef(anchorElement);
@@ -555,14 +557,14 @@ export default function Tasks() {
                             )}
                           </Popper>
                         </div>
-                        {
-                          <SubTasks
-                            content_id={task.id}
-                            isEditing={isEditing}
-                            subtask={subtaskPerTask[task.id] || []}
-                            trig={handleGetSubTaskTrig}
-                          ></SubTasks>
-                        }
+
+                        <SubTasks
+                          trig={handleGetSubTaskTrig}
+                          title_id={id}
+                          content_id={task.id}
+                          isEditing={isEditing}
+                          subtask={toSubtask[task.id] || []}
+                        ></SubTasks>
                       </div>
                     )}
                   </Draggable>
