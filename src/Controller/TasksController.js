@@ -1,9 +1,9 @@
 import axios from "axios";
 const baseURL = "https://localhost:7270";
 
-export function getTaskContents(params) {
+export function getTaskContents(param) {
   return axios
-    .get(baseURL + "/api/Task/GetTaskContent", { params })
+    .get(baseURL + "/api/Task/GetTaskContent", { params: param })
     .then((res) => {
       if (res.data.task) {
         return res.data.task;
@@ -84,9 +84,9 @@ export function getAllSubTask(params) {
     });
 }
 
-export function getSubTask(params) {
+export function getSubTask(param) {
   return axios
-    .get(baseURL + "/api/Task/GetSubTask", { params })
+    .get(baseURL + "/api/Task/GetSubTask", { params: param })
     .then((res) => {
       if (res.data.subtask) {
         return res.data.subtask;

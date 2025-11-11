@@ -24,7 +24,8 @@ import Modals from "../mainslice/commonModal";
 import SubTasks from "./SubTasks";
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
-  const id = 1; //title id (as of now)
+  const user_id = "initial";
+  const title_id = 1;
   const [showOptions, setShowOptions] = useState(false);
   const [tasksIndex, setTasksIndex] = useState(0); // index holder for which item changed status
   const [taskModIndex, setTaskModIndex] = useState(""); // index for task mod save or cancel
@@ -55,9 +56,13 @@ export default function Tasks() {
     setGetSubTasks(trig);
   };
   useEffect(() => {
+    const params = {
+      title_id: title_id,
+      user_id: "hi",
+    };
     if (getTrig === true) {
       const fetchTasks = async () => {
-        const data = await getTaskContents({ id });
+        const data = await getTaskContents(params);
         if (data === "0") {
           setTasks("");
         } else if (data != null) {
@@ -70,9 +75,13 @@ export default function Tasks() {
     setGetTrig(false);
   }, [getTrig]);
   useEffect(() => {
+    const params = {
+      title_id: title_id,
+      user_id: user_id,
+    };
     if (getSubTasks === true) {
       const fetchSubtask = async () => {
-        const data = await getAllSubTask({ id });
+        const data = await getAllSubTask(params);
         if (data === "0") {
           setSubTask([]);
         } else if (data != null) {
@@ -560,7 +569,7 @@ export default function Tasks() {
 
                         <SubTasks
                           trig={handleGetSubTaskTrig}
-                          title_id={id}
+                          title_id={title_id}
                           content_id={task.id}
                           isEditing={isEditing}
                           subtask={toSubtask[task.id] || []}
