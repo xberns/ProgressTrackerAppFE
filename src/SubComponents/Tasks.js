@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
-import { Box, Button, Grid, TextField, Typography, Modal } from "@mui/material";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { Box, Button, Grid, TextField } from "@mui/material";
 import {
   getAllSubTask,
-  modifyTaskContent,
-  postTaskContents,
   getTaskContents,
+  postTaskContents,
+  modifyTaskContent,
   deleteTaskContent,
   updateTasksOrder,
   updateStatus,
@@ -23,38 +23,44 @@ import { getDateTime } from "../mainslice/commonUtils";
 import Modals from "../mainslice/commonModal";
 import SubTasks from "./SubTasks";
 export default function Tasks() {
-  const [tasks, setTasks] = useState([]);
+  //From props
   const user_id = "initial";
   const title_id = 1;
-  const [showOptions, setShowOptions] = useState(false);
-  const [tasksIndex, setTasksIndex] = useState(0); // index holder for which item changed status
-  const [taskModIndex, setTaskModIndex] = useState(""); // index for task mod save or cancel
-  const [anchorRef, setAnchorRef] = useState(null);
-  const [isEditing, setIsEditing] = useState(true);
-  const [getTrig, setGetTrig] = useState(true);
 
-  const [subTask, setSubTask] = useState([]);
-  const [getSubTasks, setGetSubTasks] = useState(true);
-  const [orderChanged, setOrderChanged] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  //Tasks
+  const [getTrig, setGetTrig] = useState(true);
+  const [tasks, setTasks] = useState([]);
 
   const [addNew, setAddNew] = useState(false);
-  const [continued, setContinue] = useState(false); //Continued editing contents
 
-  /// Modal control
-  const mes = "Do you want to save your changes?";
-  const [showModal, setShowModal] = useState("");
-  const [message, setMessage] = useState(mes);
-  const [option1, setOption1] = useState("Yes");
-  const [option2, setOption2] = useState("No");
+  //Task content modification control
+  const [taskModIndex, setTaskModIndex] = useState("");
+  const [isEditing, setIsEditing] = useState(true);
+  const [continued, setContinueEditing] = useState(false);
+  const [hasContentChanges, setHasContentChanges] = useState(false);
+  const [orderChanged, setOrderChanged] = useState(false);
 
+  //For Task content textfield inputRef control
   const inputRef = useRef([]);
 
+  //Status
+  const [showStatusOptions, setShowStatusOptions] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(0);
+  const [statusAnchorRef, setStatusAnchorRef] = useState(null);
   const statusOptions = ["New", "In Progress", "Completed", "On Hold"];
 
-  const handleGetSubTaskTrig = (trig) => {
-    setGetSubTasks(trig);
-  };
+  //Subtask
+  const [subTask, setSubTask] = useState([]);
+  const [getSubTasks, setGetSubTasks] = useState(true);
+
+  /// Modal control
+  const [showModal, setShowModal] = useState("");
+  const mes = "Do you want to save your changes?";
+  const [message, setMessage] = useState(mes);
+  const option1 = "Yes";
+  const option2 = "No";
+
+  //Task Get
   useEffect(() => {
     const params = {
       title_id: title_id,
@@ -64,16 +70,21 @@ export default function Tasks() {
       const fetchTasks = async () => {
         const data = await getTaskContents(params);
         if (data === "0") {
-          setTasks("");
+          setTasks([]);
         } else if (data != null) {
           setTasks(data);
         }
       };
       fetchTasks();
     }
-
     setGetTrig(false);
   }, [getTrig]);
+
+  const handleGetSubTaskTrig = (trig) => {
+    setGetSubTasks(trig);
+  };
+
+  //Subtask
   useEffect(() => {
     const params = {
       title_id: title_id,
@@ -101,13 +112,15 @@ export default function Tasks() {
     }, {});
     return subtaskPerTask;
   }, [subTask]);
-  const handleClick = (taskIndex, anchorElement) => {
-    setTasksIndex(taskIndex);
-    setAnchorRef(anchorElement);
-    setShowOptions((prev) => !prev);
+
+  //Status
+  const handleStatusSelect = (statusIndex, anchorElement) => {
+    setSelectedTask(statusIndex);
+    setStatusAnchorRef(anchorElement);
+    setShowStatusOptions((prev) => !prev);
   };
 
-  const handleOptionSelect = (taskIndex, option) => {
+  const handleStatusSelected = (taskIndex, option) => {
     const updatedTasks = [...tasks];
     updatedTasks[taskIndex].status = statusOptions.indexOf(option);
     updatedTasks[taskIndex].status_modified = getDateTime();
@@ -124,42 +137,126 @@ export default function Tasks() {
     };
     await updateStatus(params);
     setGetTrig(true);
-    setShowOptions(false);
+    setShowStatusOptions(false);
+  };
+  const handleStatusPopperClose = (event) => {
+    if (statusAnchorRef && statusAnchorRef.contains(event.target)) {
+      return;
+    }
+    setShowStatusOptions(false);
   };
 
-  const handleResponse = (res) => {
-    if (addNew === true || hasChanges === true) {
+  //Add New Task
+  const addTask = () => {
+    setTasks([
+      ...tasks,
+      {
+        title_id: 1,
+        task_order: tasks.length === 0 ? 0 : tasks.length,
+        task_details: "",
+        date_created: getDateTime(),
+        status: 0,
+      },
+    ]);
+    setIndex();
+  };
+  const setIndex = () => {
+    const i = tasks.length;
+    setTaskModIndex(i);
+    setAddNew(true);
+  };
+
+  const handleAddNewTaskContent = (i) => {
+    saveNewTaskContent(i);
+    setAddNew(false);
+    setHasContentChanges(false);
+  };
+
+  const saveNewTaskContent = async (i) => {
+    const params = {
+      id: tasks[i].id,
+      title_id: tasks[i].title_id,
+      task_details: tasks[i].task_details,
+      task_order: tasks[i].task_order,
+      date_created: tasks[i].date_created,
+    };
+    await postTaskContents(params);
+    setDefault();
+  };
+
+  useEffect(() => {
+    const i = taskModIndex;
+    if (addNew === true || continued === true) {
+      if (inputRef.current[i]) {
+        inputRef.current[i].focus();
+      }
+      setContinueEditing(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addNew, continued]);
+
+  const handleCancelNewTask = (i) => {
+    const updatedTask = [...tasks];
+    updatedTask.splice(i, 1);
+    setTasks(updatedTask);
+
+    setDefault();
+  };
+
+  //Save Modified Task
+  const saveModifiedTaskContent = async (i) => {
+    const params = {
+      id: tasks[i].id,
+      title_id: tasks[i].title_id,
+      task_order: tasks[i].task_order,
+      task_details: tasks[i].task_details,
+      date_created: tasks[i].date_created,
+    };
+    await modifyTaskContent(params);
+  };
+
+  //Modal
+  const handleModalResponse = (res) => {
+    if (addNew === true || hasContentChanges === true) {
       handleAddModTask(res);
     } else {
       handleDeleteTask(res);
     }
   };
-  const handleDeleteTask = (res) => {
-    if (res === 0) {
-      removeTask(tasksIndex);
+
+  //Task Textfield Props
+  const handleTaskTextfieldFocus = (index) => {
+    setTaskModIndex(index);
+  };
+
+  const handleTaskTextfieldOnBlur = () => {
+    if (hasContentChanges === true || addNew === true) {
+      setShowModal(true);
+      if (addNew === true) {
+        if (tasks[taskModIndex].task_details === "") {
+          setHasContentChanges(false);
+          setMessage("Do you want to continue editing?");
+        }
+      }
     } else {
-      setDefault();
+      setTaskModIndex("");
     }
-    setTasksIndex("");
   };
-  const deleteTask = (index) => {
-    setShowModal(true);
-    setTasksIndex(index);
-    setMessage("Do you want to delete this task?");
+
+  const handleKeyDown = (e, index) => {
+    if (e.key === "Enter") {
+      if (inputRef.current[index]) {
+        inputRef.current[index].blur();
+      }
+      handleModTaskContent(index);
+    }
   };
-  const removeTask = async (i) => {
-    const params = {
-      id: tasks[i].id,
-      title_id: tasks[i].title_id,
-    };
-    await deleteTaskContent(params);
-    setGetTrig(true);
-    setDefault();
-  };
+
+  //Add and Modify Task Control
   const handleAddModTask = (res) => {
     const i = taskModIndex;
     if (addNew === true) {
-      if (hasChanges === false) {
+      if (hasContentChanges === false) {
         if (res === 0) {
           continueEditing();
         } else {
@@ -181,85 +278,27 @@ export default function Tasks() {
     }
   };
   const continueEditing = () => {
-    setContinue(true);
+    setContinueEditing(true);
     setShowModal(false);
-  };
-  const handleCancelNewTask = (i) => {
-    const updatedTask = [...tasks];
-    updatedTask.splice(i, 1);
-    setTasks(updatedTask);
-
-    setDefault();
-  };
-  const handleAddNewTaskContent = (i) => {
-    setAddNew(false);
-    setHasChanges(false);
-    saveNewTaskContent(i);
-  };
-  const saveNewTaskContent = async (i) => {
-    const params = {
-      id: tasks[i].id,
-      title_id: tasks[i].title_id,
-      task_details: tasks[i].task_details,
-      task_order: tasks[i].task_order,
-      date_created: tasks[i].date_created,
-    };
-    await postTaskContents(params);
-    setDefault();
-  };
-
-  const addTask = () => {
-    setTasks([
-      ...tasks,
-      {
-        title_id: 1,
-        task_order: tasks.length === 0 ? 0 : tasks.length,
-        task_details: "",
-        date_created: getDateTime(),
-        status: 0,
-      },
-    ]);
-    setIndex();
-  };
-  const setIndex = () => {
-    const i = tasks.length;
-    setTaskModIndex(i);
-    setAddNew(true);
-  };
-  useEffect(() => {
-    const i = taskModIndex;
-    if (addNew === true || continued === true) {
-      if (inputRef.current[i]) {
-        inputRef.current[i].focus();
-      }
-      setContinue(false);
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addNew, continued]);
-
-  const handleFocus = (index) => {
-    setTaskModIndex(index);
-  };
-  const handleKeyDown = (e, index) => {
-    if (e.key === "Enter") {
-      if (inputRef.current[index]) {
-        inputRef.current[index].blur();
-      }
-      handleModTaskContent(index);
-    }
   };
 
   const handleTaskChange = (index, value) => {
-    setHasChanges(true);
+    setHasContentChanges(true);
     const updatedTask = [...tasks];
     updatedTask[index].task_details = value;
     setTasks(updatedTask);
   };
+
+  const handleModTaskContent = (i) => {
+    saveModifiedTaskContent(i);
+    setDefault();
+  };
+
+  //Save and Cancel Button Control
   const handleClickSave = (i) => {
     if (addNew === true) {
-      if (hasChanges === false) {
-        handleOnBlur();
+      if (hasContentChanges === false) {
+        handleTaskTextfieldOnBlur();
       } else {
         handleAddNewTaskContent(i);
       }
@@ -268,30 +307,28 @@ export default function Tasks() {
       setDefault();
     }
   };
+
   const handleClickCancel = () => {
     if (addNew === true) {
       handleCancelNewTask(taskModIndex);
     } else setDefault();
   };
-  const handleModTaskContent = (i) => {
-    saveModifiedTaskContent(i);
-    setDefault();
-  };
 
+  //Default Control
   const setDefault = () => {
-    if (hasChanges === false) {
+    if (hasContentChanges === false) {
       if (addNew === true) {
       }
       setTaskModIndex("");
     } else {
       setGetTrig(true);
-      setHasChanges(false);
+      setHasContentChanges(false);
       setTaskModIndex("");
     }
 
     if (addNew === true) {
       setAddNew(false);
-      setContinue(false);
+      setContinueEditing(false);
     }
     if (showModal === true) {
       setShowModal(false);
@@ -299,39 +336,28 @@ export default function Tasks() {
     }
   };
 
-  const handleOnBlur = () => {
-    if (hasChanges === true || addNew === true) {
-      setShowModal(true);
-      if (addNew === true) {
-        if (tasks[taskModIndex].task_details === "") {
-          setHasChanges(false);
-          setMessage("Do you want to continue editing?");
-        }
-      }
-    } else {
-      setTaskModIndex("");
-    }
-  };
-  const saveModifiedTaskContent = async (i) => {
-    const params = {
-      id: tasks[i].id,
-      title_id: tasks[i].title_id,
-      task_order: tasks[i].task_order,
-      task_details: tasks[i].task_details,
-      date_created: tasks[i].date_created,
-    };
-    await modifyTaskContent(params);
-  };
-
-  const handleClose = (event) => {
-    if (anchorRef && anchorRef.contains(event.target)) {
-      return;
-    }
-    setShowOptions(false);
-  };
-  const handleEditOrder = (b) => {
+  //Edit Control (Delete Task and Task Order Change)
+  const handleEditClick = (b) => {
     setIsEditing(b);
   };
+  //Task Order Change
+  const onDragEnd = (result) => {
+    const { source, destination } = result;
+    if (!destination || source.index === destination.index) return;
+    setOrderChanged(true);
+    const reorderedTasks = Array.from(tasks);
+    const [movedTask] = reorderedTasks.splice(source.index, 1);
+    reorderedTasks.splice(destination.index, 0, movedTask);
+    setTasks(reorderedTasks);
+  };
+  useEffect(() => {
+    if (orderChanged === true) {
+      handleSaveOrderChange();
+    }
+    setOrderChanged(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderChanged]);
+
   const handleSaveOrderChange = async () => {
     if (orderChanged === true) {
       const newData = tasks.map(
@@ -343,23 +369,30 @@ export default function Tasks() {
     }
   };
 
-  useEffect(() => {
-    if (orderChanged === true) {
-      handleSaveOrderChange();
+  //Delete Task
+  const handleDeleteTask = (res) => {
+    if (res === 0) {
+      removeTask(taskModIndex);
+    } else {
+      setDefault();
     }
-    setOrderChanged(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderChanged]);
-
-  const onDragEnd = (result) => {
-    const { source, destination } = result;
-    if (!destination || source.index === destination.index) return;
-    setOrderChanged(true);
-    const reorderedTasks = Array.from(tasks);
-    const [movedTask] = reorderedTasks.splice(source.index, 1);
-    reorderedTasks.splice(destination.index, 0, movedTask);
-    setTasks(reorderedTasks);
+    setTaskModIndex("");
   };
+  const deleteTask = (index) => {
+    setShowModal(true);
+    setTaskModIndex(index);
+    setMessage("Do you want to delete this task?");
+  };
+  const removeTask = async (i) => {
+    const params = {
+      id: tasks[i].id,
+      title_id: tasks[i].title_id,
+    };
+    await deleteTaskContent(params);
+    setGetTrig(true);
+    setDefault();
+  };
+
   return (
     <div style={{ width: "100%" }}>
       <Modals
@@ -367,14 +400,14 @@ export default function Tasks() {
         message={message}
         option1={option1}
         option2={option2}
-        response={handleResponse}
+        response={handleModalResponse}
       />
       <Grid container justifyContent="flex-end">
         {isEditing === false && (
-          <Button onClick={() => handleEditOrder(true)}>Edit</Button>
+          <Button onClick={() => handleEditClick(true)}>Edit</Button>
         )}
         {isEditing === true && (
-          <Button onClick={() => handleEditOrder(false)}>StopEdit</Button>
+          <Button onClick={() => handleEditClick(false)}>StopEdit</Button>
         )}
       </Grid>
 
@@ -453,7 +486,7 @@ export default function Tasks() {
                           <button
                             className="custom-button"
                             onClick={(event) =>
-                              handleClick(index, event.currentTarget)
+                              handleStatusSelect(index, event.currentTarget)
                             }
                             style={{ padding: "5px 15px", marginRight: "10px" }}
                           >
@@ -462,8 +495,8 @@ export default function Tasks() {
                           <TextField
                             type="text"
                             inputRef={(el) => (inputRef.current[index] = el)}
-                            onFocus={(e) => handleFocus(index)}
-                            onBlur={(e) => handleOnBlur(index)}
+                            onFocus={(e) => handleTaskTextfieldFocus(index)}
+                            onBlur={(e) => handleTaskTextfieldOnBlur(index)}
                             onKeyDown={(e) => handleKeyDown(e, index)}
                             value={task.task_details}
                             onChange={(e) =>
@@ -512,8 +545,8 @@ export default function Tasks() {
                           )}
                           <Popper
                             sx={{ zIndex: 1 }}
-                            open={showOptions && anchorRef}
-                            anchorEl={anchorRef}
+                            open={showStatusOptions && statusAnchorRef}
+                            anchorEl={statusAnchorRef}
                             role={undefined}
                             transition
                             disablePortal
@@ -529,7 +562,9 @@ export default function Tasks() {
                                 }}
                               >
                                 <Paper>
-                                  <ClickAwayListener onClickAway={handleClose}>
+                                  <ClickAwayListener
+                                    onClickAway={handleStatusPopperClose}
+                                  >
                                     <MenuList
                                       autoFocusItem
                                       sx={{
@@ -545,8 +580,8 @@ export default function Tasks() {
                                           <MenuItem
                                             key={optionIndex}
                                             onClick={() =>
-                                              handleOptionSelect(
-                                                tasksIndex,
+                                              handleStatusSelected(
+                                                selectedTask,
                                                 option
                                               )
                                             }

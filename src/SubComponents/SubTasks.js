@@ -1,9 +1,8 @@
 import { useEffect, useState, useRef } from "react"; // remider to orgaanize the functions  and vaariables after finalizing task functionality
 import { Box, Button, TextField } from "@mui/material";
 import {
-  modifySubTask,
   postSubTask,
-  getSubTask,
+  modifySubTask,
   deleteSubTask,
   updateSubTasksOrder,
   updateSubTaskStatus,
@@ -21,44 +20,51 @@ import "../App.css";
 import { getDateTime } from "../mainslice/commonUtils";
 import Modals from "../mainslice/commonModal";
 export default function SubTasks(props) {
+  //From props
   const title_id = props.title_id;
   const content_id = props.content_id;
   const isEditing = props.isEditing;
+
+  //Subtask
   const [subtasks, setSubtasks] = useState(props.subtask);
-
-  const [showOptions, setShowOptions] = useState(false);
-  const [tasksIndex, setTasksIndex] = useState(0); // index holder for which item changed status
-  const [taskModIndex, setTaskModIndex] = useState(""); // index for task mod save or cancel
-  const [anchorRef, setAnchorRef] = useState(null);
-
-  const [orderChanged, setOrderChanged] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-
   const [addNew, setAddNew] = useState(false);
-  const [continued, setContinue] = useState(false); //Continued editing contents
 
-  /// Modal control
-  const mes = "Do you want to save your changes?";
-  const [showModal, setShowModal] = useState("");
-  const [message, setMessage] = useState(mes);
-  const [option1, setOption1] = useState("Yes");
-  const [option2, setOption2] = useState("No");
+  //Subtask Modification control
+  const [subtaskModIndex, setSubtaskModIndex] = useState("");
+  const [continued, setContinueEditing] = useState(false);
+  const [hasSubtaskChanges, setHasSubtaskChanges] = useState(false);
+  const [orderChanged, setOrderChanged] = useState(false);
 
+  //For Subtask textfield inputRef control
   const inputRef = useRef([]);
 
+  //Status
+  const [showStatusOptions, setShowStatusOptions] = useState(false);
+
+  const [selectedSubtask, setSelectedSubtask] = useState(0);
+  const [statusAnchorRef, setStatusAnchorRef] = useState(null);
   const statusOptions = ["New", "In Progress", "Completed", "On Hold"];
 
+  /// Modal control
+  const [showModal, setShowModal] = useState("");
+  const mes = "Do you want to save your changes?";
+  const [message, setMessage] = useState(mes);
+  const option1 = "Yes";
+  const option2 = "No";
+
+  //Subtask immediate update
   useEffect(() => {
     setSubtasks(props.subtask);
   }, [props.subtask]);
 
-  const handleClick = (taskIndex, anchorElement) => {
-    setTasksIndex(taskIndex);
-    setAnchorRef(anchorElement);
-    setShowOptions((prev) => !prev);
+  //Status
+  const handleStatusSelect = (subtaskIndex, anchorElement) => {
+    setSelectedSubtask(subtaskIndex);
+    setStatusAnchorRef(anchorElement);
+    setShowStatusOptions((prev) => !prev);
   };
 
-  const handleOptionSelect = (taskIndex, option) => {
+  const handleStatusSelected = (taskIndex, option) => {
     const updatedSubtasks = [...subtasks];
     updatedSubtasks[taskIndex].status = statusOptions.indexOf(option);
     updatedSubtasks[taskIndex].status_modified = getDateTime();
@@ -75,92 +81,17 @@ export default function SubTasks(props) {
     };
     await updateSubTaskStatus(params);
     props.trig(true);
-    setShowOptions(false);
+    setShowStatusOptions(false);
   };
 
-  const handleResponse = (res) => {
-    if (addNew === true || hasChanges === true) {
-      handleAddModTask(res);
-    } else {
-      handleDeleteTask(res);
+  const handleStatusPopperClose = (event) => {
+    if (statusAnchorRef && statusAnchorRef.contains(event.target)) {
+      return;
     }
-  };
-  const handleDeleteTask = (res) => {
-    if (res === 0) {
-      removeTask(tasksIndex);
-    } else {
-      setDefault();
-    }
-    setTasksIndex("");
-  };
-  const deleteTask = (index) => {
-    setShowModal(true);
-    setTasksIndex(index);
-    setMessage("Do you want to delete this task?");
-  };
-  const removeTask = async (i) => {
-    const params = {
-      id: subtasks[i].id,
-      content_id: subtasks[i].content_id,
-    };
-    await deleteSubTask(params);
-    props.trig(true);
-    setDefault();
-  };
-  const handleAddModTask = (res) => {
-    const i = taskModIndex;
-    if (addNew === true) {
-      if (hasChanges === false) {
-        if (res === 0) {
-          continueEditing();
-        } else {
-          handleCancelNewTask(i);
-        }
-      } else {
-        if (res === 0) {
-          handleAddNewTaskContent(i);
-        } else {
-          handleCancelNewTask(i);
-        }
-      }
-    } else {
-      if (res === 0) {
-        handleModTaskContent(i);
-      } else {
-        handleClickCancel();
-      }
-    }
-  };
-  const continueEditing = () => {
-    setContinue(true);
-    setShowModal(false);
-  };
-  const handleCancelNewTask = (i) => {
-    const updatedSubtask = [...subtasks];
-    updatedSubtask.splice(i, 1);
-    setSubtasks(updatedSubtask);
-
-    setDefault();
-  };
-  const handleAddNewTaskContent = (i) => {
-    setAddNew(false);
-    setHasChanges(false);
-    saveNewTaskContent(i);
-  };
-  const saveNewTaskContent = async (i) => {
-    const params = {
-      id: subtasks[i].id,
-      title_id: subtasks[i].title_id,
-      content_id: subtasks[i].content_id,
-      subtask: subtasks[i].subtask,
-      subtask_order: subtasks[i].subtask_order,
-      date_created: subtasks[i].date_created,
-    };
-    await postSubTask(params);
-    props.trig(true);
-    setDefault();
+    setShowStatusOptions(false);
   };
 
+  // Add new subtask
   const addSubtask = () => {
     setSubtasks([
       ...subtasks,
@@ -177,98 +108,51 @@ export default function SubTasks(props) {
   };
   const setIndex = () => {
     const i = subtasks.length;
-    setTaskModIndex(i);
+    setSubtaskModIndex(i);
     setAddNew(true);
+  };
+
+  const handleAddNewSubTaskContent = (i) => {
+    saveNewSubTaskContent(i);
+    setAddNew(false);
+    setHasSubtaskChanges(false);
+  };
+  const saveNewSubTaskContent = async (i) => {
+    const params = {
+      id: subtasks[i].id,
+      title_id: subtasks[i].title_id,
+      content_id: subtasks[i].content_id,
+      subtask: subtasks[i].subtask,
+      subtask_order: subtasks[i].subtask_order,
+      date_created: subtasks[i].date_created,
+    };
+    await postSubTask(params);
+    props.trig(true);
+    setDefault();
   };
 
   useEffect(() => {
     //
-    const i = taskModIndex;
+    const i = subtaskModIndex;
     if (addNew === true || continued === true) {
       if (inputRef.current[i]) {
         inputRef.current[i].focus();
       }
-      setContinue(false);
+      setContinueEditing(false);
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addNew, continued]);
 
-  const handleFocus = (index) => {
-    setTaskModIndex(index);
-  };
-  const handleKeyDown = (e, index) => {
-    if (e.key === "Enter") {
-      if (inputRef.current[index]) {
-        inputRef.current[index].blur();
-      }
-      handleModTaskContent(index);
-    }
-  };
-
-  const handleTaskChange = (index, value) => {
-    setHasChanges(true);
+  const handleCancelNewSubTask = (i) => {
     const updatedSubtask = [...subtasks];
-    updatedSubtask[index].subtask = value;
+    updatedSubtask.splice(i, 1);
     setSubtasks(updatedSubtask);
-  };
 
-  const handleClickSave = (i) => {
-    if (addNew === true) {
-      if (hasChanges === false) {
-        handleOnBlur();
-      } else {
-        handleAddNewTaskContent(i);
-      }
-    } else {
-      saveModifiedTaskContent(i);
-      setDefault();
-    }
-  };
-  const handleClickCancel = () => {
-    if (addNew === true) {
-      handleCancelNewTask(taskModIndex);
-    } else setDefault();
-  };
-  const handleModTaskContent = (i) => {
-    saveModifiedTaskContent(i);
     setDefault();
   };
 
-  const setDefault = () => {
-    if (hasChanges === false) {
-      if (addNew === true) {
-      }
-      setTaskModIndex("");
-    } else {
-      props.trig(true);
-      setHasChanges(false);
-      setTaskModIndex("");
-    }
-
-    if (addNew === true) {
-      setAddNew(false);
-      setContinue(false);
-    }
-    if (showModal === true) {
-      setShowModal(false);
-      setMessage(mes);
-    }
-  };
-
-  const handleOnBlur = () => {
-    if (hasChanges === true || addNew === true) {
-      setShowModal(true);
-      if (addNew === true) {
-        if (subtasks[taskModIndex].subtask === "") {
-          setHasChanges(false);
-          setMessage("Do you want to continue editing?");
-        }
-      }
-    } else {
-      setTaskModIndex("");
-    }
-  };
+  //Save modified subtask
   const saveModifiedTaskContent = async (i) => {
     const params = {
       id: subtasks[i].id,
@@ -281,12 +165,143 @@ export default function SubTasks(props) {
     await modifySubTask(params);
   };
 
-  const handleClose = (event) => {
-    if (anchorRef && anchorRef.contains(event.target)) {
-      return;
+  //Modal
+  const handleModalResponse = (res) => {
+    if (addNew === true || hasSubtaskChanges === true) {
+      handleAddModSubTask(res);
+    } else {
+      handleDeleteSubTask(res);
     }
-    setShowOptions(false);
   };
+
+  //Task Textfield Props
+  const handleSubTaskTextfieldFocus = (index) => {
+    setSubtaskModIndex(index);
+  };
+  const handlSubTaskTextfieldOnBlur = () => {
+    if (hasSubtaskChanges === true || addNew === true) {
+      setShowModal(true);
+      if (addNew === true) {
+        if (subtasks[subtaskModIndex].subtask === "") {
+          setHasSubtaskChanges(false);
+          setMessage("Do you want to continue editing?");
+        }
+      }
+    } else {
+      setSubtaskModIndex("");
+    }
+  };
+  const handleKeyDown = (e, index) => {
+    if (e.key === "Enter") {
+      if (inputRef.current[index]) {
+        inputRef.current[index].blur();
+      }
+      handleModSubTaskContent(index);
+    }
+  };
+
+  //Add and Modify Task Control
+  const handleAddModSubTask = (res) => {
+    const i = subtaskModIndex;
+    if (addNew === true) {
+      if (hasSubtaskChanges === false) {
+        if (res === 0) {
+          continueEditing();
+        } else {
+          handleCancelNewSubTask(i);
+        }
+      } else {
+        if (res === 0) {
+          handleAddNewSubTaskContent(i);
+        } else {
+          handleCancelNewSubTask(i);
+        }
+      }
+    } else {
+      if (res === 0) {
+        handleModSubTaskContent(i);
+      } else {
+        handleClickCancel();
+      }
+    }
+  };
+  const continueEditing = () => {
+    setContinueEditing(true);
+    setShowModal(false);
+  };
+
+  const handleSubTaskChange = (index, value) => {
+    setHasSubtaskChanges(true);
+    const updatedSubtask = [...subtasks];
+    updatedSubtask[index].subtask = value;
+    setSubtasks(updatedSubtask);
+  };
+
+  const handleModSubTaskContent = (i) => {
+    saveModifiedTaskContent(i);
+    setDefault();
+  };
+
+  //Save and Cancel Button Control
+  const handleClickSave = (i) => {
+    if (addNew === true) {
+      if (hasSubtaskChanges === false) {
+        handlSubTaskTextfieldOnBlur();
+      } else {
+        handleAddNewSubTaskContent(i);
+      }
+    } else {
+      saveModifiedTaskContent(i);
+      setDefault();
+    }
+  };
+
+  const handleClickCancel = () => {
+    if (addNew === true) {
+      handleCancelNewSubTask(subtaskModIndex);
+    } else setDefault();
+  };
+
+  //Default Control
+  const setDefault = () => {
+    if (hasSubtaskChanges === false) {
+      if (addNew === true) {
+      }
+      setSubtaskModIndex("");
+    } else {
+      props.trig(true);
+      setHasSubtaskChanges(false);
+      setSubtaskModIndex("");
+    }
+
+    if (addNew === true) {
+      setAddNew(false);
+      setContinueEditing(false);
+    }
+    if (showModal === true) {
+      setShowModal(false);
+      setMessage(mes);
+    }
+  };
+
+  //Edit Control (Delete Subtask and Subtask Order Change)
+  const onDragEnd = (result) => {
+    const { source, destination } = result;
+    if (!destination || source.index === destination.index) return;
+    setOrderChanged(true);
+    const reorderedSubtasks = Array.from(subtasks);
+    const [movedTask] = reorderedSubtasks.splice(source.index, 1);
+    reorderedSubtasks.splice(destination.index, 0, movedTask);
+    setSubtasks(reorderedSubtasks);
+  };
+  useEffect(() => {
+    if (orderChanged === true) {
+      handleSaveOrderChange();
+    }
+    setOrderChanged(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderChanged]);
+
   const handleSaveOrderChange = async () => {
     if (orderChanged === true) {
       const newData = subtasks.map(
@@ -298,22 +313,28 @@ export default function SubTasks(props) {
     }
   };
 
-  useEffect(() => {
-    if (orderChanged === true) {
-      handleSaveOrderChange();
+  // Delete Subtask
+  const handleDeleteSubTask = (res) => {
+    if (res === 0) {
+      removeSubTask(subtaskModIndex);
+    } else {
+      setDefault();
     }
-    setOrderChanged(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderChanged]);
-
-  const onDragEnd = (result) => {
-    const { source, destination } = result;
-    if (!destination || source.index === destination.index) return;
-    setOrderChanged(true);
-    const reorderedTasks = Array.from(subtasks);
-    const [movedTask] = reorderedTasks.splice(source.index, 1);
-    reorderedTasks.splice(destination.index, 0, movedTask);
-    setSubtasks(reorderedTasks);
+    setSubtaskModIndex("");
+  };
+  const deleteSubtask = (index) => {
+    setShowModal(true);
+    setSubtaskModIndex(index);
+    setMessage("Do you want to delete this task?");
+  };
+  const removeSubTask = async (i) => {
+    const params = {
+      id: subtasks[i].id,
+      content_id: subtasks[i].content_id,
+    };
+    await deleteSubTask(params);
+    props.trig(true);
+    setDefault();
   };
   return (
     <div style={{ width: "100%" }}>
@@ -322,7 +343,7 @@ export default function SubTasks(props) {
         message={message}
         option1={option1}
         option2={option2}
-        response={handleResponse}
+        response={handleModalResponse}
       />
 
       {subtasks !== "" && (
@@ -401,7 +422,7 @@ export default function SubTasks(props) {
                           <button
                             className="custom-button"
                             onClick={(event) =>
-                              handleClick(index, event.currentTarget)
+                              handleStatusSelect(index, event.currentTarget)
                             }
                             style={{ padding: "5px 15px", marginRight: "10px" }}
                           >
@@ -410,16 +431,16 @@ export default function SubTasks(props) {
                           <TextField
                             type="text"
                             inputRef={(el) => (inputRef.current[index] = el)}
-                            onFocus={(e) => handleFocus(index)}
-                            onBlur={(e) => handleOnBlur(index)}
+                            onFocus={(e) => handleSubTaskTextfieldFocus(index)}
+                            onBlur={(e) => handlSubTaskTextfieldOnBlur(index)}
                             onKeyDown={(e) => handleKeyDown(e, index)}
                             value={subtaskss.subtask}
                             onChange={(e) =>
-                              handleTaskChange(index, e.target.value)
+                              handleSubTaskChange(index, e.target.value)
                             }
                             sx={{ marginTop: "10px", width: "500px" }}
                           />{" "}
-                          {index === taskModIndex && (
+                          {index === subtaskModIndex && (
                             <Box
                               sx={{
                                 marginLeft: 1,
@@ -432,7 +453,7 @@ export default function SubTasks(props) {
                                 variant="contained"
                                 color="primary"
                                 onMouseDown={() =>
-                                  handleClickSave(taskModIndex)
+                                  handleClickSave(subtaskModIndex)
                                 }
                               >
                                 yes
@@ -448,7 +469,7 @@ export default function SubTasks(props) {
                           )}
                           {isEditing && (
                             <button
-                              onClick={() => deleteTask(index)}
+                              onClick={() => deleteSubtask(index)}
                               style={{
                                 marginLeft: "10px",
                                 background: "red",
@@ -460,8 +481,8 @@ export default function SubTasks(props) {
                           )}
                           <Popper
                             sx={{ zIndex: 1 }}
-                            open={showOptions && anchorRef}
-                            anchorEl={anchorRef}
+                            open={showStatusOptions && statusAnchorRef}
+                            anchorEl={statusAnchorRef}
                             role={undefined}
                             transition
                             disablePortal
@@ -477,7 +498,9 @@ export default function SubTasks(props) {
                                 }}
                               >
                                 <Paper>
-                                  <ClickAwayListener onClickAway={handleClose}>
+                                  <ClickAwayListener
+                                    onClickAway={handleStatusPopperClose}
+                                  >
                                     <MenuList
                                       autoFocusItem
                                       sx={{
@@ -493,8 +516,8 @@ export default function SubTasks(props) {
                                           <MenuItem
                                             key={optionIndex}
                                             onClick={() =>
-                                              handleOptionSelect(
-                                                tasksIndex,
+                                              handleStatusSelected(
+                                                selectedSubtask,
                                                 option
                                               )
                                             }
