@@ -37,6 +37,8 @@ export default function SubTasks(props) {
 
   //For Subtask textfield inputRef control
   const inputRef = useRef([]);
+  const [isEnter, setIsEnter] = useState(false);
+  const [inputOnBlurControl, setInputOnBlurControl] = useState(false);
 
   //Status
   const [showStatusOptions, setShowStatusOptions] = useState(false);
@@ -179,18 +181,29 @@ export default function SubTasks(props) {
     setSubtaskModIndex(index);
   };
   const handlSubTaskTextfieldOnBlur = () => {
-    if (hasSubtaskChanges === true || addNew === true) {
-      setShowModal(true);
-      if (addNew === true) {
-        if (subtasks[subtaskModIndex].subtask === "") {
-          setHasSubtaskChanges(false);
-          setMessage("Do you want to continue editing?");
-        }
-      }
-    } else {
-      setSubtaskModIndex("");
-    }
+    setInputOnBlurControl(true);
   };
+  const handleShowModal = () => {
+    setShowModal(true);
+  };
+  useEffect(() => {
+    if (inputOnBlurControl === true) {
+      if (hasSubtaskChanges === true || addNew === true) {
+        handleShowModal();
+        if (addNew === true) {
+          if (subtasks[subtaskModIndex].subtask === "") {
+            setHasSubtaskChanges(false);
+            setMessage("Do you want to continue editing?");
+          }
+        }
+      } else {
+        setSubtaskModIndex("");
+      }
+    }
+    setInputOnBlurControl(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputOnBlurControl]);
+
   const handleKeyDown = (e, index) => {
     if (e.key === "Enter") {
       if (inputRef.current[index]) {
@@ -239,6 +252,7 @@ export default function SubTasks(props) {
 
   const handleModSubTaskContent = (i) => {
     saveModifiedTaskContent(i);
+    setIsEnter(false);
     setDefault();
   };
 

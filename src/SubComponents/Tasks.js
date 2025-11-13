@@ -42,6 +42,8 @@ export default function Tasks() {
 
   //For Task content textfield inputRef control
   const inputRef = useRef([]);
+  const [isEnter, setIsEnter] = useState(false);
+  const [inputOnBlurControl, setInputOnBlurControl] = useState(false);
 
   //Status
   const [showStatusOptions, setShowStatusOptions] = useState(false);
@@ -54,7 +56,7 @@ export default function Tasks() {
   const [getSubTasks, setGetSubTasks] = useState(true);
 
   /// Modal control
-  const [showModal, setShowModal] = useState("");
+  const [showModal, setShowModal] = useState(false);
   const mes = "Do you want to save your changes?";
   const [message, setMessage] = useState(mes);
   const option1 = "Yes";
@@ -228,23 +230,36 @@ export default function Tasks() {
   const handleTaskTextfieldFocus = (index) => {
     setTaskModIndex(index);
   };
-
   const handleTaskTextfieldOnBlur = () => {
-    if (hasContentChanges === true || addNew === true) {
-      setShowModal(true);
-      if (addNew === true) {
-        if (tasks[taskModIndex].task_details === "") {
-          setHasContentChanges(false);
-          setMessage("Do you want to continue editing?");
-        }
-      }
-    } else {
-      setTaskModIndex("");
-    }
+    setInputOnBlurControl(true);
   };
+  const handleShowModal = () => {
+    setShowModal(true);
+  };
+  useEffect(() => {
+    if (inputOnBlurControl === true) {
+      if (hasContentChanges === true || addNew === true) {
+        if (isEnter === false) {
+          handleShowModal();
+        }
+
+        if (addNew === true) {
+          if (tasks[taskModIndex].task_details === "") {
+            setHasContentChanges(false);
+            setMessage("Do you want to continue editing?");
+          }
+        }
+      } else {
+        setTaskModIndex("");
+      }
+    }
+    setInputOnBlurControl(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputOnBlurControl]);
 
   const handleKeyDown = (e, index) => {
     if (e.key === "Enter") {
+      setIsEnter(true);
       if (inputRef.current[index]) {
         inputRef.current[index].blur();
       }
@@ -291,6 +306,7 @@ export default function Tasks() {
 
   const handleModTaskContent = (i) => {
     saveModifiedTaskContent(i);
+    setIsEnter(false);
     setDefault();
   };
 
