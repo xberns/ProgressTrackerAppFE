@@ -116,6 +116,7 @@ export default function SubTasks(props) {
 
   const handleAddNewSubTaskContent = (i) => {
     saveNewSubTaskContent(i);
+    setIsEnter(false);
     setAddNew(false);
     setHasSubtaskChanges(false);
   };
@@ -189,11 +190,19 @@ export default function SubTasks(props) {
   useEffect(() => {
     if (inputOnBlurControl === true) {
       if (hasSubtaskChanges === true || addNew === true) {
-        handleShowModal();
-        if (addNew === true) {
-          if (subtasks[subtaskModIndex].subtask === "") {
-            setHasSubtaskChanges(false);
-            setMessage("Do you want to continue editing?");
+        if (isEnter === true) {
+          if (addNew === true) {
+            handleAddNewSubTaskContent(subtaskModIndex);
+          } else {
+            handleModSubTaskContent(subtaskModIndex);
+          }
+        } else {
+          handleShowModal();
+          if (addNew === true) {
+            if (subtasks[subtaskModIndex].subtask === "") {
+              setHasSubtaskChanges(false);
+              setMessage("Do you want to continue editing?");
+            }
           }
         }
       } else {
@@ -206,10 +215,10 @@ export default function SubTasks(props) {
 
   const handleKeyDown = (e, index) => {
     if (e.key === "Enter") {
+      setIsEnter(true);
       if (inputRef.current[index]) {
         inputRef.current[index].blur();
       }
-      handleModSubTaskContent(index);
     }
   };
 

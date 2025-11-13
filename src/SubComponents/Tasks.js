@@ -170,6 +170,7 @@ export default function Tasks() {
 
   const handleAddNewTaskContent = (i) => {
     saveNewTaskContent(i);
+    setIsEnter(false);
     setAddNew(false);
     setHasContentChanges(false);
   };
@@ -239,14 +240,19 @@ export default function Tasks() {
   useEffect(() => {
     if (inputOnBlurControl === true) {
       if (hasContentChanges === true || addNew === true) {
-        if (isEnter === false) {
+        if (isEnter === true) {
+          if (addNew === true) {
+            handleAddNewTaskContent(taskModIndex);
+          } else {
+            handleModTaskContent(taskModIndex);
+          }
+        } else {
           handleShowModal();
-        }
-
-        if (addNew === true) {
-          if (tasks[taskModIndex].task_details === "") {
-            setHasContentChanges(false);
-            setMessage("Do you want to continue editing?");
+          if (addNew === true) {
+            if (tasks[taskModIndex].task_details === "") {
+              setHasContentChanges(false);
+              setMessage("Do you want to continue editing?");
+            }
           }
         }
       } else {
@@ -263,7 +269,6 @@ export default function Tasks() {
       if (inputRef.current[index]) {
         inputRef.current[index].blur();
       }
-      handleModTaskContent(index);
     }
   };
 
