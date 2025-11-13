@@ -63,7 +63,7 @@ export default function SubTasks(props) {
   const handleStatusSelect = (subtaskIndex, anchorElement) => {
     setSelectedSubtask(subtaskIndex);
     setStatusAnchorRef(anchorElement);
-    setShowStatusOptions((prev) => !prev);
+    setShowStatusOptions(true);
   };
 
   const handleStatusSelected = (taskIndex, option) => {

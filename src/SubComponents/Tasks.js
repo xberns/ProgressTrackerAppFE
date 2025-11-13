@@ -119,7 +119,7 @@ export default function Tasks() {
   const handleStatusSelect = (statusIndex, anchorElement) => {
     setSelectedTask(statusIndex);
     setStatusAnchorRef(anchorElement);
-    setShowStatusOptions((prev) => !prev);
+    setShowStatusOptions(true);
   };
 
   const handleStatusSelected = (taskIndex, option) => {
