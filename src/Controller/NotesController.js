@@ -24,7 +24,12 @@ export function updateNotes(params) {
 export function getNotes(params) {
   return axios
     .get(baseURL + "/api/Notes/GetNote", { params })
-    .then((res) => res.data[0])
+    .then((res) => {
+      if (res.data.note) {
+        return res.data;
+      }
+      return res.data[0];
+    })
     .catch((err) => {
       console.error("Error:", err);
       throw err;
