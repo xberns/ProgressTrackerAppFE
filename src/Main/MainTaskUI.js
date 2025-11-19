@@ -5,7 +5,7 @@ import Calendar from "../DatePicker/Calendar";
 import Tasks from "../SubComponents/Tasks";
 import ProgressCircle from "../SubComponents/ProgressCircle";
 import Notes from "../SubComponents/Notes";
-const MainUI = () => {
+const MainTaskUI = () => {
   return (
     <div className="backgroundStyle">
       <Grid
@@ -80,4 +80,4 @@ const MainUI = () => {
   );
 };
 
-export default MainUI;
+export default MainTaskUI;
