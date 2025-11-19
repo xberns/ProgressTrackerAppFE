@@ -55,7 +55,7 @@ export default function Tasks() {
   const [subTask, setSubTask] = useState([]);
   const [getSubTasks, setGetSubTasks] = useState(true);
 
-  /// Modal control
+  // Modal control
   const [showModal, setShowModal] = useState(false);
   const mes = "Do you want to save your changes?";
   const [message, setMessage] = useState(mes);
@@ -211,8 +211,8 @@ export default function Tasks() {
     const params = {
       id: tasks[i].id,
       title_id: tasks[i].title_id,
-      task_order: tasks[i].task_order,
       task_details: tasks[i].task_details,
+      task_order: tasks[i].task_order,
       date_created: tasks[i].date_created,
     };
     await modifyTaskContent(params);
